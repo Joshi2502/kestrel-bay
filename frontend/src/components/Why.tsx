@@ -22,10 +22,15 @@ export function Why({ content, children }: { content: WhyContent; children: Reac
     const width = pop.offsetWidth;
     const height = pop.offsetHeight;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-    const below = rect.bottom + 6;
-    const top = below + height > window.innerHeight ? Math.max(8, rect.top - 6 - height) : below;
+    // Open on the side with more room, never over the number itself; scroll inside if it still doesn't fit.
+    const roomBelow = window.innerHeight - rect.bottom - 14;
+    const roomAbove = rect.top - 14;
+    const useBelow = height <= roomBelow || roomBelow >= roomAbove;
+    const room = useBelow ? roomBelow : roomAbove;
+    const shown = Math.min(height, room);
     pop.style.setProperty("--why-left", `${left}px`);
-    pop.style.setProperty("--why-top", `${top}px`);
+    pop.style.setProperty("--why-top", `${useBelow ? rect.bottom + 6 : rect.top - 6 - shown}px`);
+    pop.style.setProperty("--why-max", `${room}px`);
   }
 
   return (

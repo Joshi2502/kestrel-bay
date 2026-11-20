@@ -160,11 +160,11 @@ async function Item({ code, from }: { code: string; from: string }) {
                     {lot.status === "hold" && " (on hold, not counted)"}
                     {lot.status === "damaged" && " (damaged, ignored)"}
                   </td>
-                  <td className="py-2 pr-4">{lot.is_adjustment ? `${lot.lot_no} (adjustment)` : lot.lot_no}</td>
+                  <td className="whitespace-nowrap py-2 pr-4">{lot.is_adjustment ? `${lot.lot_no} (adjustment)` : lot.lot_no}</td>
                   <td className="py-2 pr-4 text-right">
                     {q.value} <span className="text-muted">{q.unit}</span>
                   </td>
-                  <td className="py-2 pr-4 text-right">{lot.expiry_date ? longDate(lot.expiry_date) : "—"}</td>
+                  <td className="whitespace-nowrap py-2 pr-4 text-right">{lot.expiry_date ? longDate(lot.expiry_date) : "—"}</td>
                 </tr>
               );
             })}

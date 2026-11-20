@@ -63,10 +63,10 @@ Every number goes through it: `qty`, `money`, `days`, `percent`, `relativeDate`,
 - Dates: `Nov 29` within the current year, `Nov 29, 2027` otherwise. Weekday only in the headline.
 
 ## Derived figures (display only)
-- Daily usage = `demand_next_30d / 30` (API field already returned).
-- Days of cover = `sellable / daily usage`, shown beside the API's run-out date. If they disagree the API's date wins
-  and the derived value is labelled "about".
-- If demand is 0, days of cover is "no recent sales", never infinity.
+- Daily use = `demand_next_30d / 30` (API field already returned), shown for reference only.
+- Days of cover = API `run_out_date` − as-of date (no division). Items with no run-out show "Past the window".
+- "Runs out in N days" and "reorder lands in N days" are date differences from API dates.
+- As-of date on the item page is the first point of the API `projection` series (the item payload has no as_of).
 
 ## Component inventory
 - `Why` (client): a number that explains itself. Quiet dotted underline on hover/focus. Desktop: native `popover`
@@ -92,6 +92,12 @@ Every number goes through it: `qty`, `money`, `days`, `percent`, `relativeDate`,
 - No exclamation marks, all-caps warnings, or red outside "runs out before reorder".
 - No raw hex in components, no off-scale spacing, no third radius or shadow.
 - No component libraries; no new dependency over ~15KB gzipped without asking.
+
+## Copy decisions made
+- The first table is titled "Order now", not "Runs out before reorder arrives": the backend puts an item there when its
+  last day to order is within 7 days, even if it would not run out first (e.g. Lobster Meat). The headline counts only
+  true run-outs (`days_late > 0`).
+- The retired "demand by month" bar chart is gone; the one chart is projected stock.
 
 ## Needs backend (not built; fallbacks noted)
 - Last-updated timestamp (API gives only the fixed as-of date). Fallback: show "As of {date}".
