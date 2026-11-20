@@ -30,4 +30,4 @@ One Monday screen for Dana (VP Purchasing): (1) what will run out before a reord
 ## Build status
 See `.superpowers/sdd/2026-11-19-dana-inventory/progress.md` (local ledger) and `git log`. Update this section as tasks complete.
 - [x] Tasks 1–9 done (backend rules + API + login, frontend UI)
-- [x] Task 10 deployed. Frontend https://kestrel-bay-rosy.vercel.app, API https://kestrel-bay-api-eta.vercel.app (Vercel team "Sneha Joshi's projects"), Neon DB `kestrel-bay-db`. Deployed with the Vercel CLI (not git-triggered): redeploy from `backend/` or `frontend/` with `vercel deploy --prod`. Demo login dana / kestrel-monday.
+- [x] Task 10 deployed. Frontend https://kestrel-bay-rosy.vercel.app, API https://kestrel-bay-api-eta.vercel.app (Vercel team "Sneha Joshi's projects"), Neon DB `kestrel-bay-db`. Frontend project is git-connected (Joshi2502/kestrel-bay, `main`, Root Directory `frontend`): a push to `main` deploys it. The backend project is NOT git-linked: redeploy it from `backend/` with `vercel deploy --prod`. Do not run `vercel deploy` from inside `frontend/` any more (Root Directory would double up). Demo login dana / kestrel-monday.
