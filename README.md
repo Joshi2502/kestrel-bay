@@ -125,6 +125,38 @@ Where the exports and the kickoff call left something open, this is what I decid
   lots; item-level "too much stock" above 180 days of cover (only the part not already flagged);
   and dead/dormant items. Valued at cost. Harbor stock is listed first.
 
+## Out of scope
+
+Left out on purpose, so Dana's Monday screen could be right first:
+
+- **Fresh / day-boat buying.** Dana said it's a separate daily job and she doesn't need help there.
+- **Marco's asks:** availability lookup, pricing (the price list is not loaded), route planning and email drafting. Walt's call was "Dana first".
+- **Live BlueTide connection, re-uploads or an ETL pipeline.** The CSVs are loaded once.
+- **Creating or sending purchase orders.** Suggested quantities are suggestions only.
+- **Multiple users or roles.** There is one shared login for Dana.
+- **Background jobs** (no Celery, Redis or error-tracking service).
+
+## What I'd do next
+
+- **Show a "last updated" time** on the dashboard, so Dana knows which nightly snapshot she is looking at.
+- **Add the stuck-stock details Dana would want:** days on hand, last sale date and a suggested action (discount, move or dump) for each row.
+- **Show stock movements** on the item page, so a change in on-hand can be explained.
+- **Turn on the pace factor** once there is more than one year of history. Today the forecast is last year's same month, and the pace adjustment stays at 1.0 because the prior-year window isn't in the data.
+- **Throttle login attempts.** The live login has no rate limit.
+- **Cache the dashboard.** It recomputes about 15,000 sales rows on every request. That is fast at this size but won't scale.
+- **Check phones and other browsers.** The chart labels are tight on small screens, and the UI has only been tested in Chrome.
+- **Let Dana confirm the assumptions** that came from me rather than from her: the 120-day dormant rule, the 180-day "too much stock" line and the safety days.
+- **Git-link the backend** Vercel project so it deploys on push like the frontend.
+
+## How I used AI tools
+
+I used **Claude Code** only, with no other AI tools. We worked as a pair: I made the decisions and Claude did much of the typing.
+
+- **Planning:** Claude helped turn the kickoff transcript into a design spec and a task plan (both are in `docs/superpowers/`). I chose the hosting, the single shared login and the lead times and safety days.
+- **Building:** the business rules were written test-first, with one test per data trap in the CSVs. Claude wrote most of the backend and frontend code, and I reviewed it.
+- **Checking:** the rules, API and screens were run against the real exports, and the figures were compared with the raw CSVs. Lint, type checks, tests and a production build run in CI.
+- **Assumptions:** where the transcript and the data left something open, the choice is written down in the Assumptions section above rather than buried in code.
+
 ## Original brief
 
 > # Kestrel Bay Seafood: take-home
