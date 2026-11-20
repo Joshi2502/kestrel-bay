@@ -29,4 +29,7 @@ One Monday screen for Dana (VP Purchasing): (1) what will run out before a reord
 
 ## Build status
 See `.superpowers/sdd/2026-11-19-dana-inventory/progress.md` (local ledger) and `git log`. Update this section as tasks complete.
-- [x] Task 1 scaffold
+- [x] Tasks 1–7 done (scaffold, normalize, models, loader, demand, position, verdict)
+- [ ] Task 8 stuck stock + services + API + auth
+- [ ] Task 9 frontend
+- [ ] Task 10 deploy + README assumptions
