@@ -20,6 +20,7 @@ class Verdict:
     order_by_date: date | None
     earliest_arrival: date
     days_late: int
+    gap_days: int  # days below zero until stock on the way lands; 0 when a new order is needed
     suggested_qty: float
     projection: list[tuple[date, float]]
 
@@ -103,4 +104,15 @@ def compute_verdict(
     )
     suggested = _round_up(needed - at_arrival, planning_uom)
 
-    return Verdict(status, run_out, order_by, earliest_arrival, days_late, suggested, projection)
+    # A dip that stock already on the way closes needs no new order. Report how long it lasts
+    # rather than calling a reorder "late" (it is the order on the way that matters).
+    gap_days = 0
+    if run_out and suggested == 0:
+        recovery = next((day for day, qty in projection if day > run_out and qty >= 0), None)
+        if recovery:
+            gap_days = (recovery - run_out).days
+            days_late = 0
+
+    return Verdict(
+        status, run_out, order_by, earliest_arrival, days_late, gap_days, suggested, projection
+    )
