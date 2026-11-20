@@ -35,8 +35,21 @@ API docs: http://localhost:8000/api/schema/swagger/
 
 ## Live app
 
-- **Live link:** _(added after deploy)_
+- **Live link:** https://kestrel-bay-rosy.vercel.app
 - **Demo login:** `dana` / `kestrel-monday`
+
+## Deployment
+
+Two Vercel projects from this repo plus a Neon Postgres database, deployed with the Vercel CLI
+(`vercel deploy --prod` from `backend/` and from `frontend/`).
+
+- `frontend/` is the Next.js app. `BACKEND_URL` points it at the API, and `/api/*` is proxied so
+  login cookies stay on one origin.
+- `backend/` is the Django API (Vercel's Django preset; no custom entry point). Environment:
+  `DJANGO_SETTINGS_MODULE=config.settings.prod`, `SECRET_KEY`, `DATABASE_URL` (Neon),
+  `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` (the frontend URL), `AS_OF_DATE`; optionally
+  `DANA_USERNAME` / `DANA_PASSWORD` to change the demo login.
+- Database: `DATABASE_URL=<neon unpooled url> make migrate load-data` (one-time load).
 
 ## How it works
 

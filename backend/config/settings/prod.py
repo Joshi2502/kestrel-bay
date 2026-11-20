@@ -5,6 +5,8 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])  # noqa: F405
 
 DATABASES = {"default": env.db("DATABASE_URL")}  # noqa: F405
 DATABASES["default"]["CONN_MAX_AGE"] = 0
+# Neon's pooled endpoint is a transaction pooler: no server-side prepared statements.
+DATABASES["default"].setdefault("OPTIONS", {})["prepare_threshold"] = None
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])  # noqa: F405
 
