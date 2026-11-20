@@ -17,6 +17,18 @@ def test_shr1620_is_order_now(loaded):
     assert row["suggested_qty"] > 0
 
 
+def test_shr2125_is_a_one_day_dip_closed_by_the_overdue_po_not_a_late_reorder(loaded):
+    row = next(r for r in build_dashboard(AS_OF)["order_now"] if r["code"] == "SHR-2125")
+    assert row["run_out_date"] == "2026-11-29"
+    assert row["next_eta"] == "2026-11-30"
+    assert row["suggested_qty"] == 0
+    assert row["days_late"] == 0
+    assert row["gap_days"] == 1
+    assert "1 day" in row["headline"]
+    assert "PO-260394" in row["headline"]
+    assert "too late" not in row["headline"]
+
+
 def test_every_planned_item_lands_in_exactly_one_group(loaded):
     d = build_dashboard(AS_OF)
     total = len(d["order_now"]) + len(d["watch"]) + len(d["handled"]) + d["ok_count"]
