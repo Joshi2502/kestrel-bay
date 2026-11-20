@@ -1,61 +1,214 @@
 @import "tailwindcss";
 
+/* Quiet ledger tokens. OKLCH only; see DESIGN.md. Light is the default. */
 :root {
-  --background: #f6f4ef;
-  --surface: #ffffff;
-  --foreground: #1c2a2f;
-  --muted: #5d6b70;
-  --line: #e3dfd4;
-  --accent: #0f5f6b;
-  --danger: #b3321f;
-  --danger-bg: #fbeae6;
-  --warn: #9a6200;
-  --warn-bg: #fdf3dc;
-  --calm: #4b5b60;
-  --calm-bg: #edf0ef;
-  --good: #1f6b3a;
-  --good-bg: #e5f3ea;
+  --bg: oklch(0.975 0.006 200);
+  --surface: oklch(0.995 0.003 200);
+  --raised: oklch(0.99 0.004 200);
+  --border: oklch(0.9 0.01 200);
+  --border-strong: oklch(0.62 0.025 205);
+  --text: oklch(0.22 0.02 215);
+  --muted: oklch(0.46 0.02 210);
+  --accent: oklch(0.447 0.073 210.6);
+  --accent-contrast: oklch(0.98 0.01 200);
+  --critical: oklch(0.5 0.17 32);
+  --critical-bg: oklch(0.955 0.03 35);
+  --watch: oklch(0.46 0.1 75);
+  --watch-bg: oklch(0.955 0.05 88);
+  --stuck: oklch(0.46 0.075 255);
+  --stuck-bg: oklch(0.95 0.022 255);
+  --shadow-pop: 0 4px 16px oklch(0.22 0.02 215 / 0.12);
+  --shadow-sheet: 0 -4px 24px oklch(0.22 0.02 215 / 0.14);
+  color-scheme: light;
 }
 
+:root[data-theme="dark"] {
+  --bg: oklch(0.17 0.012 210);
+  --surface: oklch(0.21 0.014 210);
+  --raised: oklch(0.25 0.015 210);
+  --border: oklch(0.3 0.015 210);
+  --border-strong: oklch(0.55 0.03 208);
+  --text: oklch(0.93 0.01 200);
+  --muted: oklch(0.72 0.02 205);
+  --accent: oklch(0.74 0.09 205);
+  --accent-contrast: oklch(0.18 0.02 210);
+  --critical: oklch(0.78 0.12 35);
+  --critical-bg: oklch(0.28 0.05 35);
+  --watch: oklch(0.82 0.1 85);
+  --watch-bg: oklch(0.28 0.05 85);
+  --stuck: oklch(0.78 0.07 255);
+  --stuck-bg: oklch(0.26 0.03 255);
+  --shadow-pop: 0 4px 16px oklch(0 0 0 / 0.4);
+  --shadow-sheet: 0 -4px 24px oklch(0 0 0 / 0.45);
+  color-scheme: dark;
+}
+
+/* "System": no data-theme attribute is rendered, so the OS preference decides. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #11191c;
-    --surface: #182327;
-    --foreground: #e8eeef;
-    --muted: #96a5a9;
-    --line: #28373c;
-    --accent: #55b3c0;
-    --danger: #ff8f7c;
-    --danger-bg: #3a201b;
-    --warn: #f0b955;
-    --warn-bg: #36290f;
-    --calm: #aebcc0;
-    --calm-bg: #1f2c30;
-    --good: #7fd49b;
-    --good-bg: #17301f;
+  :root:not([data-theme]) {
+    --bg: oklch(0.17 0.012 210);
+    --surface: oklch(0.21 0.014 210);
+    --raised: oklch(0.25 0.015 210);
+    --border: oklch(0.3 0.015 210);
+    --border-strong: oklch(0.55 0.03 208);
+    --text: oklch(0.93 0.01 200);
+    --muted: oklch(0.72 0.02 205);
+    --accent: oklch(0.74 0.09 205);
+    --accent-contrast: oklch(0.18 0.02 210);
+    --critical: oklch(0.78 0.12 35);
+    --critical-bg: oklch(0.28 0.05 35);
+    --watch: oklch(0.82 0.1 85);
+    --watch-bg: oklch(0.28 0.05 85);
+    --stuck: oklch(0.78 0.07 255);
+    --stuck-bg: oklch(0.26 0.03 255);
+    --shadow-pop: 0 4px 16px oklch(0 0 0 / 0.4);
+    --shadow-sheet: 0 -4px 24px oklch(0 0 0 / 0.45);
+    color-scheme: dark;
   }
 }
 
 @theme inline {
-  --color-background: var(--background);
+  /* Drop Tailwind's default palette, radii and shadows so only tokens can be used. */
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --color-foreground: var(--foreground);
+  --color-raised: var(--raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
   --color-muted: var(--muted);
-  --color-line: var(--line);
   --color-accent: var(--accent);
-  --color-danger: var(--danger);
-  --color-danger-bg: var(--danger-bg);
-  --color-warn: var(--warn);
-  --color-warn-bg: var(--warn-bg);
-  --color-calm: var(--calm);
-  --color-calm-bg: var(--calm-bg);
-  --color-good: var(--good);
-  --color-good-bg: var(--good-bg);
-  --font-sans: var(--font-geist-sans);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-critical: var(--critical);
+  --color-critical-bg: var(--critical-bg);
+  --color-watch: var(--watch);
+  --color-watch-bg: var(--watch-bg);
+  --color-stuck: var(--stuck);
+  --color-stuck-bg: var(--stuck-bg);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --shadow-pop: var(--shadow-pop);
+  --shadow-sheet: var(--shadow-sheet);
+
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Modular scale (~1.2); dense UI so it tops out low. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.375rem;
+  --text-md: 1.0625rem;
+  --text-md--line-height: 1.5rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 2rem;
+  --text-2xl: 1.8125rem;
+  --text-2xl--line-height: 2.25rem;
+}
+
+:root {
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+}
+
+html {
+  background: var(--bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* "Why" popover (desktop) / bottom sheet (phone). Native popover: Esc, light-dismiss, focus return. */
+.why-pop {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  top: var(--why-top, 0);
+  left: var(--why-left, 0);
+  width: min(23rem, calc(100vw - 1rem));
+  max-height: min(32rem, calc(100vh - 2rem));
+  overflow: auto;
+  padding: 16px;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+}
+.why-pop:popover-open {
+  animation: why-in var(--dur-fast) var(--ease);
+}
+@keyframes why-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (max-width: 639px) {
+  .why-pop {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 80vh;
+    border-width: 1px 0 0;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    box-shadow: var(--shadow-sheet);
+    padding-bottom: 24px;
+  }
+  .why-pop:popover-open {
+    animation-name: why-sheet-in;
+    animation-duration: var(--dur);
+  }
+  .why-pop::backdrop {
+    background: oklch(0 0 0 / 0.35);
+  }
+}
+@keyframes why-sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
 }
