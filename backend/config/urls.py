@@ -10,6 +10,7 @@ def health_check(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("health", health_check),  # Vercel strips trailing slashes
     path("health/", health_check, name="health-check"),
     path("api/", include("inventory.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

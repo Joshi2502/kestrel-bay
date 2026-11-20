@@ -10,6 +10,10 @@ def test_health_check():
     assert response.json() == {"status": "healthy"}
 
 
+def test_health_check_without_trailing_slash():
+    assert Client().get("/health").json() == {"status": "healthy"}
+
+
 def test_api_schema():
     assert Client().get("/api/schema/").status_code == 200
 
