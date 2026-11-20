@@ -23,7 +23,7 @@ HANDLED_DEFAULT_DAYS = 14
 
 KG_TO_LB = 2.20462
 
-# Seed planning numbers (vendor code -> (lead_time_days, safety_days)). Dana can edit them in the app.
+# Seed planning numbers: vendor code -> (lead_time_days, safety_days). Editable in the app.
 VENDOR_SEEDS: dict[str, tuple[int | None, int]] = {
     "BXE": (84, 14),
     "AFS": (42, 14),
