@@ -112,10 +112,26 @@ def test_patch_vendor_changes_verdict(auth_client, loaded):
 
 
 @pytest.mark.parametrize(
-    "payload", [{"lead_time_days": -1}, {"safety_days": 999}, {"lead_time_days": "x"}]
+    "payload",
+    [
+        {"lead_time_days": -1},
+        {"safety_days": 999},
+        {"lead_time_days": "x"},
+        {"lead_time_days": 0},  # a supplier order never arrives the same day
+        {"lead_time_days": None},  # blank must not silently fall back to BlueTide's number
+        {"safety_days": None},
+    ],
 )
 def test_patch_vendor_validates(auth_client, loaded, payload):
+    before = Vendor.objects.values().get(code="BXE")
     assert auth_client.patch("/api/vendors/BXE", payload, format="json").status_code == 400
+    assert Vendor.objects.values().get(code="BXE") == before
+
+
+def test_patch_vendor_allows_no_buffer(auth_client, loaded):
+    r = auth_client.patch("/api/vendors/BXE", {"safety_days": 0}, format="json")
+    assert r.status_code == 200
+    assert Vendor.objects.get(code="BXE").safety_days == 0
 
 
 def test_patch_unknown_vendor_404(auth_client, loaded):

@@ -27,6 +27,8 @@ class VendorSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["code", "name", "country", "lead_time_days_system"]
         extra_kwargs = {
-            "lead_time_days": {"min_value": 0, "max_value": 365},
+            # A real supplier lead time is at least a day, and it can't be cleared: a blank
+            # would fall back to BlueTide's stale number without anyone noticing.
+            "lead_time_days": {"min_value": 1, "max_value": 365, "allow_null": False},
             "safety_days": {"min_value": 0, "max_value": 365},
         }

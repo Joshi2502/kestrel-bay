@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { btnPrimary, field } from "@/components/ui";
 import { apiFetch, jsonBody } from "@/lib/api";
+import { parseDays } from "@/lib/days";
 import type { Vendor } from "@/lib/types";
 
 export function VendorForm({ vendor }: { vendor: Vendor }) {
@@ -13,11 +14,15 @@ export function VendorForm({ vendor }: { vendor: Vendor }) {
   const [status, setStatus] = useState<string | null>(null);
 
   async function save() {
+    const leadDays = parseDays(lead, 1);
+    const safetyDays = parseDays(safety, 0);
+    if (!leadDays.ok) return setStatus("Enter the real lead time as a whole number of days, 1 to 365.");
+    if (!safetyDays.ok) return setStatus("Enter the extra buffer as a whole number of days, 0 to 365.");
     setStatus("Saving…");
     try {
       await apiFetch(`/vendors/${vendor.code}`, {
         method: "PATCH",
-        ...jsonBody({ lead_time_days: Number(lead), safety_days: Number(safety) }),
+        ...jsonBody({ lead_time_days: leadDays.value, safety_days: safetyDays.value }),
       });
       setStatus("Saved");
       router.refresh();
@@ -36,7 +41,7 @@ export function VendorForm({ vendor }: { vendor: Vendor }) {
       <div className="mt-3 flex flex-wrap items-end gap-4 text-sm">
         <label>
           Real lead time (days)
-          <input className={`${field} mt-1 block w-28`} type="number" min="0" max="365" value={lead} onChange={(e) => setLead(e.target.value)} />
+          <input className={`${field} mt-1 block w-28`} type="number" min="1" max="365" value={lead} onChange={(e) => setLead(e.target.value)} />
         </label>
         <label>
           Extra buffer (days)
