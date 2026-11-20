@@ -49,7 +49,7 @@ export function StockProjection({ points, runOut, lands, unit }: StockProjection
               x={runOut}
               stroke="var(--critical)"
               strokeDasharray="4 4"
-              label={{ value: `Runs out ${shortDate(runOut)}`, position: landsFirst ? "insideTopRight" : "insideTopLeft", fill: "var(--critical)", fontSize: 12 }}
+              label={{ value: `Runs out ${shortDate(runOut)}`, position: landsFirst ? "insideTopRight" : "insideTopLeft", fill: "var(--critical)", fontSize: 12, dy: 16 }}
             />
           )}
           <Line type="linear" dataKey="qty" stroke="var(--text)" strokeWidth={2} dot={false} isAnimationActive={false} />
