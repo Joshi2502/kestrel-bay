@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **No reference to Benmore, Benmore-Studio, Aditya, Niture, ArkashJ, or any Gitleaks license key anywhere in the repo.** `project-creation.sh` is local-only (git-excluded) — read it for structure, never copy branding. LICENSE: `Copyright 2026 Sneha Joshi. All rights reserved.` + the same proprietary paragraph.
+- **No third-party company/personal branding, org names, skills-repo URLs, or license keys anywhere in the repo.** `project-creation.sh` is local-only (git-excluded) — read it for structure, never copy branding. LICENSE: `Copyright 2026 Sneha Joshi. All rights reserved.` + the same proprietary paragraph.
 - Git: author `Sneha Joshi <sjoshi32@hawk.iit.edu>` (already in repo-local config), push via GitHub account **Joshi2502** (`gh auth status` must show it active). Commit trailer: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` (or whichever model is executing).
 - "Today" is `AS_OF_DATE = date(2026, 11, 16)` from settings (`env("AS_OF_DATE", default="2026-11-16")`). Never call `date.today()` in business logic.
 - Python ≥3.12; Django `>=5.2,<6.0`; ruff line-length 100, rules `E,F,I,N,W,UP,B,SIM`; coverage `fail_under = 80`; tests use `config.settings.test` (SQLite in-memory).
@@ -77,7 +77,7 @@ frontend/
 - [ ] **Step 1:** Reproduce `project-creation.sh` steps 4–12 by hand in this repo (no clone, no repo creation), with these deltas: Django app named `inventory` (not `api`); drop `celery[redis]`, `redis`, `sentry-sdk` deps and all their settings/compose services; add no data libraries (no pandas, no dateutil) — the loader uses stdlib `csv` and `datetime.strptime` for the two date formats. `base.py` adds `AS_OF_DATE = date.fromisoformat(env("AS_OF_DATE", default="2026-11-16"))`, DRF default auth `SessionAuthentication`, default permission `IsAuthenticated`, `CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost:3000"])`. `prod.py`: `DATABASES = {"default": env.db("DATABASE_URL")}` with `CONN_MAX_AGE = 0`, `SECURE_SSL_REDIRECT = False` (Vercel terminates TLS) but `SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")`, secure cookies on, `SESSION_COOKIE_SAMESITE = "Lax"`. `docker-compose.yml`: `db` service only (postgres:17-alpine, db/user `kestrel_bay`, pw `kestrel_bay_dev`). CI: template jobs minus docker-build and claude review; gitleaks job without `GITLEAKS_LICENSE`. Makefile: template targets plus `load-data: cd backend && uv run python manage.py load_kestrel_data --dir ../data`. `git mv kickoff-call-transcript.md context/meetings/`.
 - [ ] **Step 2:** Keep the take-home `README.md` content as a "Brief" section at the bottom of the new README; top of README: project name "Kestrel Bay — Inventory for Dana", Quick Start, Stack, Commands, and an empty `## Assumptions` heading (filled in Task 10).
 - [ ] **Step 3:** Run `make install && cd backend && uv run pytest && uv run ruff check . && uv run mypy . && uv run python manage.py check` → all pass (3 health tests). `cd frontend && npx tsc --noEmit` passes.
-- [ ] **Step 4:** `grep -riE 'benmore|aditya|niture|arkash|798620' . --exclude-dir={node_modules,.venv,.git} --exclude=project-creation.sh` → no output.
+- [ ] **Step 4:** grep the repo (excluding `node_modules`, `.venv`, `.git`, `.superpowers`) for the template's company name, its GitHub org, the template author's name, and its Gitleaks license key → no output. (The exact terms are in the local-only `project-creation.sh`.)
 - [ ] **Step 5:** Commit `chore: scaffold Django + Next.js project` and push.
 
 ---

@@ -3,7 +3,7 @@
 Sneha Joshi's take-home project. **Not a client/agency project: no company branding, no references to anyone else's org or accounts.** LICENSE and authorship are Sneha Joshi.
 
 ## Git & GitHub rules (non-negotiable)
-- Account: **Joshi2502** only — run `gh auth status` and confirm it is active before any push/PR. Never use `aniture`.
+- Account: **Joshi2502** only — run `gh auth status` and confirm it is active before any push/PR. Never push with any other logged-in `gh` account.
 - Repo: https://github.com/Joshi2502/kestrel-bay (private). Identity (repo-local): `Sneha Joshi <sjoshi32@hawk.iit.edu>`.
 - Repo-local `credential.helper` is `!gh auth git-credential` so pushes use the active `gh` account.
 - **No `Co-Authored-By` trailers and no "Generated with Claude Code" lines** in commits or PRs.

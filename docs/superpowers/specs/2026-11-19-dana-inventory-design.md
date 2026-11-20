@@ -123,7 +123,7 @@ Hosting (user chose Vercel): **two Vercel projects from the same repo** — `fro
 
 ## 5. Stack & project standards (from the template, de-branded)
 
-Taken from the template script, with **no Benmore / Aditya references anywhere** (no org name, no license key, no skills-repo clone, LICENSE in Sneha Joshi's name):
+Taken from the template script, with **no third-party company or personal branding anywhere** (no org name, no license key, no skills-repo clone, LICENSE in Sneha Joshi's name):
 - Repo layout: `backend/`, `frontend/`, `context/` (meetings: kickoff transcript; features), `.github/workflows/`, root `Makefile`, `.gitignore`, `.dockerignore`, `gitleaks.toml`, `.pre-commit-config.yaml` (ruff + gitleaks), `README.md`, `LICENSE`.
 - Backend: Python 3.12, `uv`, Django 5.2, DRF, drf-spectacular (Swagger at `/api/schema/swagger/`), django-cors-headers, django-environ, psycopg 3, whitenoise, gunicorn, python-json-logger. Settings split `config/settings/{base,dev,prod,test}.py`; `/health/` endpoint. **Dropped**: celery, redis, sentry (optional DSN hook may stay inert).
 - Tests: pytest + pytest-django + pytest-cov (fail_under 80) + factory-boy; test settings use SQLite in-memory. Rules module gets the heaviest coverage — one test per data trap in §3.
