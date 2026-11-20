@@ -30,4 +30,4 @@ One Monday screen for Dana (VP Purchasing): (1) what will run out before a reord
 ## Build status
 See `.superpowers/sdd/2026-11-19-dana-inventory/progress.md` (local ledger) and `git log`. Update this section as tasks complete.
 - [x] Tasks 1–9 done (backend rules + API + login, frontend UI)
-- [ ] Task 10 deploy + README assumptions
+- [~] Task 10: Vercel config, requirements.txt and README assumptions done. **Not deployed yet** — blocked on (1) Joshi2502 `gh` token needs the `workflow` scope to push `.github/workflows/ci.yml`, (2) Vercel login, (3) Neon database. Work is on branch `build/dana-inventory`, not yet pushed or merged to `main`.
