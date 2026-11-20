@@ -29,8 +29,15 @@ AS_OF = date(2026, 11, 16)
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
-@pytest.fixture
-def loaded(db):
+@pytest.fixture(scope="session")
+def django_db_setup(django_db_setup, django_db_blocker):
+    """Load the real BlueTide CSVs once per test session; each test still rolls back."""
     from inventory.loader import load_all
 
-    return load_all(DATA_DIR, AS_OF)
+    with django_db_blocker.unblock():
+        pytest.load_report = load_all(DATA_DIR, AS_OF)
+
+
+@pytest.fixture
+def loaded(db):
+    return pytest.load_report
