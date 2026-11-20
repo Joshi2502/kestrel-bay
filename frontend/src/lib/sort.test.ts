@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { pick, sortStuck, withParams } from "./sort.ts";
+import { sortStuck, withParams } from "./sort.ts";
 import type { StuckRowData } from "./types.ts";
 
 const row = (code: string, value: number, expiry: string | null): StuckRowData => ({
@@ -30,9 +30,4 @@ test("rows with no expiry sort last when ascending by expiry", () => {
 test("withParams keeps other state and replaces the patched keys", () => {
   assert.equal(withParams({ sort: "item", dir: "asc" }, { sort: "order", dir: "desc" }), "/?sort=order&dir=desc");
   assert.equal(withParams({ sort: "item" }, { sort: null }), "/");
-});
-
-test("pick falls back for unknown values", () => {
-  assert.equal(pick("nope", ["a", "b"] as const, "a"), "a");
-  assert.equal(pick("b", ["a", "b"] as const, "a"), "b");
 });

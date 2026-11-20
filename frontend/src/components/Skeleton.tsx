@@ -16,11 +16,9 @@ export function PageSkeleton({ rows = 4 }: { rows?: number }) {
         ))}
       </div>
       <Bar className="mt-10 h-5 w-40" />
-      <div className="mt-3 border-y border-border">
+      <div className="mt-3 flex gap-3 overflow-hidden">
         {Array.from({ length: rows }, (_, i) => (
-          <div key={i} className="flex h-[69px] items-center border-b border-border last:border-b-0">
-            <Bar className="h-4 w-1/3" />
-          </div>
+          <Bar key={i} className="h-72 w-[78vw] max-w-[17rem] shrink-0 sm:w-64" />
         ))}
       </div>
       <span className="sr-only">Loading Monday’s numbers</span>
