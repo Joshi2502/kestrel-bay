@@ -1,0 +1,63 @@
+[project]
+name = "kestrel-bay"
+version = "0.1.0"
+description = "Inventory planning screen for Kestrel Bay Seafood's purchasing team"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<6.0",
+    "djangorestframework>=3.15",
+    "drf-spectacular>=0.27",
+    "django-cors-headers>=4.4",
+    "django-environ>=0.11",
+    "psycopg[binary]>=3.2",
+    "gunicorn>=22.0",
+    "whitenoise>=6.7",
+    "python-json-logger>=2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "pytest-cov>=5.0",
+    "pytest-xdist>=3.6",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "django-stubs>=5.0",
+    "djangorestframework-stubs>=3.15",
+    "pre-commit>=3.8",
+    "factory-boy>=3.3",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings/*.py" = ["E402", "F401", "F403"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py", "*_test.py"]
+addopts = ["--cov=.", "--cov-report=term-missing", "--reuse-db", "-n", "auto"]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.coverage.run]
+source = ["."]
+omit = ["*/migrations/*", "*/tests/*", "*/.venv/*", "manage.py", "config/settings/*", "config/wsgi.py", "config/asgi.py", "api/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

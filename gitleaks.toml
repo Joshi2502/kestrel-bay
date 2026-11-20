@@ -1,0 +1,14 @@
+title = "Gitleaks config"
+
+[allowlist]
+description = "Allowlist for common false positives"
+regexes = [
+  '''test_[a-zA-Z0-9_-]+''',
+  '''example_[a-zA-Z0-9_-]+''',
+  '''fake_[a-zA-Z0-9_-]+''',
+  '''mock_[a-zA-Z0-9_-]+''',
+]
+paths = [
+  '''.env.example''',
+  '''tests/fixtures/.*''',
+]
