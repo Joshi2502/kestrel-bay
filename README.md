@@ -40,8 +40,9 @@ API docs: http://localhost:8000/api/schema/swagger/
 
 ## Deployment
 
-Two Vercel projects from this repo plus a Neon Postgres database, deployed with the Vercel CLI
-(`vercel deploy --prod` from `backend/` and from `frontend/`).
+Two Vercel projects from this repo plus a Neon Postgres database. The frontend deploys automatically on every
+push to `main` (Root Directory `frontend`). The backend is deployed with the Vercel CLI (`vercel deploy --prod`
+from `backend/`).
 
 - `frontend/` is the Next.js app. `BACKEND_URL` points it at the API, and `/api/*` is proxied so
   login cookies stay on one origin.
