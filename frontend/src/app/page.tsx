@@ -1,69 +1,124 @@
-import Image from "next/image";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { DataNotes } from "@/components/DataNotes";
+import { Header } from "@/components/Header";
+import { ItemRow } from "@/components/ItemRow";
+import { StuckList } from "@/components/StuckList";
+import { apiFetch } from "@/lib/api";
+import { money, weekdayDate } from "@/lib/format";
+import type { Dashboard, ItemRowData } from "@/lib/types";
+
+function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div className={`rounded-lg px-3 py-2 ${tone}`}>
+      <div className="text-2xl font-semibold leading-tight">{value}</div>
+      <div className="text-xs">{label}</div>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2">
+      <div>
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {hint && <p className="text-sm text-muted">{hint}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Rows({ rows, onChanged }: { rows: ItemRowData[]; onChanged: () => void }) {
+  return (
+    <ul className="space-y-2">
+      {rows.map((row) => (
+        <ItemRow key={row.code} row={row} onChanged={onChanged} />
+      ))}
+    </ul>
+  );
+}
 
 export default function Home() {
+  const [data, setData] = useState<Dashboard | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setData(await apiFetch<Dashboard>("/dashboard"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load the dashboard");
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
+
+  if (error) return <p className="p-6 text-danger">{error}</p>;
+  if (!data) return <p className="p-6 text-muted">Loading Monday’s numbers…</p>;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <Header title="Kestrel Bay" subtitle={weekdayDate(data.as_of)} />
+      <main className="mx-auto max-w-4xl space-y-6 px-4 py-4">
+        <div className="grid grid-cols-3 gap-2">
+          <Stat label="to order now" value={String(data.order_now.length)} tone="bg-danger-bg text-danger" />
+          <Stat label="to watch" value={String(data.watch.length)} tone="bg-warn-bg text-warn" />
+          <Stat label="stuck at cost" value={money(data.stuck_total_value)} tone="bg-calm-bg text-calm" />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <Section
+          title="Order now"
+          hint="Will run out before a new order could get here, counting what is already on the way."
+        >
+          {data.order_now.length ? (
+            <Rows rows={data.order_now} onChanged={load} />
+          ) : (
+            <p className="text-muted">Nothing is urgent.</p>
+          )}
+        </Section>
+
+        {data.watch.length > 0 && (
+          <Section title="Watch" hint="Order within the next four weeks.">
+            <Rows rows={data.watch} onChanged={load} />
+          </Section>
+        )}
+
+        {data.handled.length > 0 && (
+          <details className="rounded-lg border border-line bg-surface p-3">
+            <summary className="cursor-pointer font-medium">
+              Handled ({data.handled.length}): you’ve told the screen about these
+            </summary>
+            <div className="mt-3">
+              <Rows rows={data.handled} onChanged={load} />
+            </div>
+          </details>
+        )}
+
+        <p className="text-sm text-muted">
+          {data.ok_count} other items are fine: their stock lasts past the planning window.
+        </p>
+
+        <Section
+          title="Stuck stock"
+          hint="Sellable stock nobody will take soon: under six months of shelf life left, too much on hand, or dead items. Harbor stock costs pallet fees every month."
+        >
+          <StuckList rows={data.stuck} />
+        </Section>
+
+        <DataNotes notes={data.data_notes} />
       </main>
-    </div>
+    </>
   );
 }
