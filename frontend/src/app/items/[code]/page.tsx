@@ -3,16 +3,16 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { HandledButton } from "@/components/HandledButton";
 import { LazyStockProjection } from "@/components/LazyStockProjection";
+import { MiniTile } from "@/components/MiniTile";
+import { ScrollRow } from "@/components/ScrollRow";
 import { Severity } from "@/components/Severity";
 import { PageSkeleton } from "@/components/Skeleton";
-import { StuckTable } from "@/components/StuckTable";
+import { StuckTile } from "@/components/StuckTile";
 import { Why } from "@/components/Why";
 import { arrivalDate, days, longDate, monthLabel, perDay, qty, qtyParts, shortDate, daysBetween } from "@/lib/format";
 import { getItem } from "@/lib/server-api";
 import type { ItemDetail } from "@/lib/types";
 import { itemWhy } from "@/lib/why";
-
-const th = "py-2 pr-4 text-xs font-medium text-muted";
 
 function safeBack(from: string | undefined): string {
   return from && /^\/(?!\/)/.test(from) ? from : "/";
@@ -108,92 +108,73 @@ async function Item({ code, from }: { code: string; from: string }) {
 
       {d.incoming.length > 0 && (
         <section>
-          <h2 className="text-md font-semibold">Coming in</h2>
-          <table className="mt-2 w-full border-t border-border">
-            <thead>
-              <tr className="text-left">
-                <th className={th}>Order</th>
-                <th className={`${th} text-right`}>Quantity</th>
-                <th className={`${th} text-right`}>Arrives</th>
-                <th className={th}>Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.incoming.map((i) => {
-                const q = qtyParts(i.qty, d.uom);
-                return (
-                  <tr key={`${i.source}-${i.ref}`} className="border-b border-border align-top">
-                    <td className="py-2 pr-4">{i.source === "dana" ? "You phoned in" : i.ref}</td>
-                    <td className="py-2 pr-4 text-right">
-                      {q.value} <span className="text-muted">{q.unit}</span>
-                    </td>
-                    <td className="py-2 pr-4 text-right">{shortDate(i.eta)}</td>
-                    <td className="py-2 pr-4 text-sm text-muted">
-                      {i.overdue && i.vendor_said ? `Vendor said ${shortDate(i.vendor_said)}, still open, so we assume ${shortDate(i.eta)}` : ""}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <h2 className="mb-3 text-md font-semibold">Coming in</h2>
+          <ScrollRow label="Orders coming in">
+            {d.incoming.map((i) => {
+              const q = qtyParts(i.qty, d.uom);
+              return (
+                <MiniTile
+                  key={`${i.source}-${i.ref}`}
+                  title={i.source === "dana" ? "You phoned in" : i.ref}
+                  value={q.value}
+                  unit={q.unit}
+                  lines={[
+                    `Arrives ${shortDate(i.eta)}`,
+                    ...(i.overdue && i.vendor_said ? [`Vendor said ${shortDate(i.vendor_said)}, still open`] : []),
+                  ]}
+                />
+              );
+            })}
+          </ScrollRow>
         </section>
       )}
 
       <section>
-        <h2 className="text-md font-semibold">What you have</h2>
-        <table className="mt-2 w-full border-t border-border">
-          <thead>
-            <tr className="text-left">
-              <th className={th}>Where</th>
-              <th className={th}>Lot</th>
-              <th className={`${th} text-right`}>Quantity</th>
-              <th className={`${th} text-right`}>Expires</th>
-            </tr>
-          </thead>
-          <tbody>
-            {d.lots.map((lot) => {
-              const q = qtyParts(lot.qty, lot.uom);
-              return (
-                <tr key={`${lot.location}-${lot.lot_no}`} className={`border-b border-border ${lot.status !== "sellable" ? "text-muted" : ""}`}>
-                  <td className="py-2 pr-4">
-                    {lot.location}
-                    {lot.status === "hold" && " (on hold, not counted)"}
-                    {lot.status === "damaged" && " (damaged, ignored)"}
-                  </td>
-                  <td className="whitespace-nowrap py-2 pr-4">{lot.is_adjustment ? `${lot.lot_no} (adjustment)` : lot.lot_no}</td>
-                  <td className="py-2 pr-4 text-right">
-                    {q.value} <span className="text-muted">{q.unit}</span>
-                  </td>
-                  <td className="whitespace-nowrap py-2 pr-4 text-right">{lot.expiry_date ? longDate(lot.expiry_date) : "—"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <h2 className="mb-3 text-md font-semibold">What you have</h2>
+        <ScrollRow label="Stock on hand by lot">
+          {d.lots.map((lot) => {
+            const q = qtyParts(lot.qty, lot.uom);
+            const note = lot.status === "hold" ? "On hold, not counted" : lot.status === "damaged" ? "Damaged, ignored" : null;
+            return (
+              <MiniTile
+                key={`${lot.location}-${lot.lot_no}`}
+                title={lot.location}
+                value={q.value}
+                unit={q.unit}
+                muted={lot.status !== "sellable"}
+                lines={[
+                  lot.is_adjustment ? `${lot.lot_no} (adjustment)` : `Lot ${lot.lot_no}`,
+                  lot.expiry_date ? `Expires ${longDate(lot.expiry_date)}` : "No expiry date",
+                  ...(note ? [note] : []),
+                ]}
+              />
+            );
+          })}
+        </ScrollRow>
       </section>
 
       {d.committed_by_month.length > 0 && (
         <section>
-          <h2 className="text-md font-semibold">Already promised to customers</h2>
-          <ul className="mt-2 divide-y divide-border border-y border-border">
+          <h2 className="mb-3 text-md font-semibold">Already promised to customers</h2>
+          <ScrollRow label="Promised to customers by month">
             {d.committed_by_month.map((c) => {
               const [y, m] = c.month.split("-").map(Number);
-              return (
-                <li key={c.month} className="flex justify-between py-2">
-                  <span>{monthLabel(y, m)}</span>
-                  <span>{qty(c.qty, d.uom)}</span>
-                </li>
-              );
+              const q = qtyParts(c.qty, d.uom);
+              return <MiniTile key={c.month} title={monthLabel(y, m)} value={q.value} unit={q.unit} lines={["On open orders"]} />;
             })}
-          </ul>
+          </ScrollRow>
         </section>
       )}
 
       {d.stuck.length > 0 && asOf && (
         <section>
           <h2 className="text-md font-semibold">Stuck stock on this item</h2>
-          <div className="mt-2 border-t border-border">
-            <StuckTable rows={d.stuck} asOf={asOf} sort="value" dir="desc" params={{}} here={`/items/${d.code}`} />
+          <div className="mt-3">
+            <ScrollRow label="Stuck stock on this item">
+              {d.stuck.map((r, i) => (
+                <StuckTile key={`${r.lot_no ?? ""}-${r.location ?? ""}-${i}`} row={r} asOf={asOf} here={`/items/${d.code}`} />
+              ))}
+            </ScrollRow>
           </div>
         </section>
       )}

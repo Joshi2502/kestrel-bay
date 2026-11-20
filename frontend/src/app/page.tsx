@@ -2,30 +2,31 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { DataNotes } from "@/components/DataNotes";
 import { HeadlineStrip } from "@/components/HeadlineStrip";
-import { RiskTable } from "@/components/RiskTable";
+import { RiskTile } from "@/components/RiskTile";
+import { ScrollRow } from "@/components/ScrollRow";
 import { PageSkeleton } from "@/components/Skeleton";
-import { StuckTable } from "@/components/StuckTable";
+import { StuckTile } from "@/components/StuckTile";
 import { arrivalDate, daysBetween, groupedInt, money } from "@/lib/format";
 import { getDashboard } from "@/lib/server-api";
-import { type Params, one, pick, sortRisk, sortStuck, withParams } from "@/lib/sort";
+import { type Params, sortStuck, withParams } from "@/lib/sort";
 
-function Section({ id, title, hint, children }: { id: string; title: string; hint: string; children: React.ReactNode }) {
+function Section({ id, title, count, hint, children }: { id: string; title: string; count?: number; hint: string; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-4">
-      <h2 className="text-md font-semibold">{title}</h2>
-      <p className="max-w-2xl text-sm text-muted">{hint}</p>
-      <div className="mt-3 border-t border-border">{children}</div>
+      <h2 className="text-md font-semibold">
+        {title}
+        {count !== undefined && <span className="ml-2 font-normal text-muted">{count}</span>}
+      </h2>
+      <p className="mb-3 max-w-2xl text-sm text-muted">{hint}</p>
+      {children}
     </section>
   );
 }
 
 async function Dashboard({ params }: { params: Params }) {
   const data = await getDashboard();
-  const sort = pick(one(params, "sort"), ["urgency", "item", "order"] as const, "urgency");
-  const dir = pick(one(params, "dir"), ["asc", "desc"] as const, "asc");
-  const ssort = pick(one(params, "ssort"), ["value", "qty", "expiry"] as const, "value");
-  const sdir = pick(one(params, "sdir"), ["asc", "desc"] as const, "desc");
   const here = withParams(params, {});
+  const stuck = sortStuck(data.stuck, "value", "desc");
 
   const all = [...data.order_now, ...data.watch];
   const scaleMax = Math.max(
@@ -41,7 +42,7 @@ async function Dashboard({ params }: { params: Params }) {
       <HeadlineStrip data={data} />
 
       {nothingAtRisk ? (
-        <section className="border-y border-border py-6">
+        <section className="rounded-md border border-border bg-surface p-6">
           <h2 className="font-serif text-lg">Nothing to order this week.</h2>
           <p className="mt-1 max-w-xl text-muted">
             Every item has enough stock, on hand or on the way, to last until a new order could arrive.
@@ -53,30 +54,23 @@ async function Dashboard({ params }: { params: Params }) {
             <Section
               id="order-now"
               title="Order now"
+              count={data.order_now.length}
               hint="Stock runs out before a reorder placed today could arrive, or the last day to order is this week."
             >
-              <RiskTable
-                rows={sortRisk(data.order_now, sort, dir)}
-                asOf={data.as_of}
-                sort={sort}
-                dir={dir}
-                params={params}
-                here={here}
-                scaleMax={scaleMax}
-              />
+              <ScrollRow label="Order now">
+                {data.order_now.map((row) => (
+                  <RiskTile key={row.code} row={row} asOf={data.as_of} here={here} scaleMax={scaleMax} section="order" />
+                ))}
+              </ScrollRow>
             </Section>
           )}
           {data.watch.length > 0 && (
-            <Section id="watch" title="Watch" hint="Tight but recoverable. Order within the next four weeks.">
-              <RiskTable
-                rows={sortRisk(data.watch, sort, dir)}
-                asOf={data.as_of}
-                sort={sort}
-                dir={dir}
-                params={params}
-                here={here}
-                scaleMax={scaleMax}
-              />
+            <Section id="watch" title="Watch" count={data.watch.length} hint="Tight but recoverable. Order within the next four weeks.">
+              <ScrollRow label="Watch">
+                {data.watch.map((row) => (
+                  <RiskTile key={row.code} row={row} asOf={data.as_of} here={here} scaleMax={scaleMax} section="watch" />
+                ))}
+              </ScrollRow>
             </Section>
           )}
         </>
@@ -87,13 +81,18 @@ async function Dashboard({ params }: { params: Params }) {
         {data.handled.length > 0 && ` ${data.handled.length} more are marked handled.`}
       </p>
 
-      {data.stuck.length > 0 && (
+      {stuck.length > 0 && (
         <Section
           id="stuck"
           title="Stuck stock"
-          hint={`${money(data.stuck_total_value)} at cost. Shelf life under six months, too much on hand, or not selling. Stock at Harbor Cold Storage costs pallet fees every month.`}
+          count={stuck.length}
+          hint={`${money(data.stuck_total_value)} at cost, biggest first. Shelf life under six months, too much on hand, or not selling. Stock at Harbor Cold Storage costs pallet fees every month.`}
         >
-          <StuckTable rows={sortStuck(data.stuck, ssort, sdir)} asOf={data.as_of} sort={ssort} dir={sdir} params={params} here={here} />
+          <ScrollRow label="Stuck stock">
+            {stuck.map((row, i) => (
+              <StuckTile key={`${row.code}-${row.lot_no ?? ""}-${row.location ?? ""}-${i}`} row={row} asOf={data.as_of} here={here} />
+            ))}
+          </ScrollRow>
         </Section>
       )}
 

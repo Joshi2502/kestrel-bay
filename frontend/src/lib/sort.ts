@@ -1,18 +1,8 @@
-import type { ItemRowData, StuckRowData } from "./types";
+import type { StuckRowData } from "./types";
 
 export type Dir = "asc" | "desc";
-export type RiskSort = "urgency" | "item" | "order";
 export type StuckSort = "value" | "qty" | "expiry";
 export type Params = Record<string, string | string[] | undefined>;
-
-export function one(params: Params, key: string): string | undefined {
-  const v = params[key];
-  return Array.isArray(v) ? v[0] : v;
-}
-
-export function pick<T extends string>(value: string | undefined, allowed: readonly T[], fallback: T): T {
-  return allowed.includes(value as T) ? (value as T) : fallback;
-}
 
 /** Same query string with some keys replaced; used so sort links and "back" keep state. */
 export function withParams(params: Params, patch: Record<string, string | null>): string {
@@ -30,16 +20,6 @@ export function withParams(params: Params, patch: Record<string, string | null>)
 }
 
 const sign = (dir: Dir) => (dir === "asc" ? 1 : -1);
-
-export function sortRisk(rows: ItemRowData[], key: RiskSort, dir: Dir): ItemRowData[] {
-  if (key === "urgency" && dir === "asc") return rows; // API order is already by urgency
-  const out = [...rows];
-  if (key === "urgency") return out.reverse();
-  out.sort((a, b) =>
-    key === "item" ? a.description.localeCompare(b.description) * sign(dir) : (a.suggested_qty - b.suggested_qty) * sign(dir),
-  );
-  return out;
-}
 
 export function sortStuck(rows: StuckRowData[], key: StuckSort, dir: Dir): StuckRowData[] {
   const out = [...rows];
