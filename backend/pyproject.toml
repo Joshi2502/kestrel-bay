@@ -56,7 +56,7 @@ django_settings_module = "config.settings.test"
 
 [tool.coverage.run]
 source = ["."]
-omit = ["*/migrations/*", "*/tests/*", "*/.venv/*", "manage.py", "config/settings/*", "config/wsgi.py", "config/asgi.py", "api/*"]
+omit = ["*/migrations/*", "*/tests/*", "*/.venv/*", "manage.py", "config/settings/*", "config/wsgi.py", "config/asgi.py"]
 
 [tool.coverage.report]
 fail_under = 80
