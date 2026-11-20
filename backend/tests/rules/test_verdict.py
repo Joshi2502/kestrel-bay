@@ -24,6 +24,22 @@ def test_runs_out_before_lead_time_is_order_now_and_late():
     assert v.days_late == 74
 
 
+def test_dip_closed_by_an_order_on_the_way_is_a_short_gap_not_a_late_reorder():
+    # Runs out on day 10, but a big PO lands on day 11 and covers everything after it.
+    po = Incoming("po", "P", 5000, AS_OF + timedelta(11), None, True)
+    v = verdict(100, steady(10), incoming=[po])
+    assert v.run_out_date == AS_OF + timedelta(10)
+    assert v.suggested_qty == 0  # nothing new to order
+    assert v.gap_days == 1  # below zero on day 10 only
+    assert v.days_late == 0  # a reorder is not what is late
+
+
+def test_a_real_late_reorder_has_no_gap_days():
+    v = verdict(100, steady(10))
+    assert v.days_late == 74
+    assert v.gap_days == 0
+
+
 def test_incoming_po_delays_runout():
     po = Incoming("po", "P", 500, AS_OF + timedelta(5), None, False)
     v = verdict(100, steady(10), lead=14, safety=7, incoming=[po])

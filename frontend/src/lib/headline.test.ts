@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { headlineSentence } from "./headline.ts";
 import type { ItemRowData } from "./types.ts";
 
-const row = (days_late: number) => ({ days_late }) as ItemRowData;
+const row = (days_late: number, gap_days = 0) => ({ days_late, gap_days }) as ItemRowData;
 
 test("says how many run out first and how many more need ordering", () => {
   const s = headlineSentence({ order_now: [row(71), row(50), row(6), row(0)], stuck_total_value: 117598.51 });
@@ -23,4 +23,12 @@ test("calm confirmation when nothing is urgent", () => {
 
 test("items due this week but not running out are not called run-outs", () => {
   assert.match(headlineSentence({ order_now: [row(0), row(0)], stuck_total_value: 0 }), /None will run out before it arrives/);
+});
+
+test("a short dip closed by an order on the way is not a run-out and needs no new order", () => {
+  const s = headlineSentence({ order_now: [row(71), row(0, 1)], stuck_total_value: 0 });
+  assert.equal(
+    s,
+    "1 item runs out before a reorder can arrive. 1 more dips below zero briefly until an order on the way lands.",
+  );
 });

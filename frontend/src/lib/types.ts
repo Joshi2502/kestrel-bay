@@ -21,6 +21,7 @@ export interface ItemRowData {
   order_by_date: string | null;
   earliest_arrival: string | null;
   days_late: number;
+  gap_days: number;
   suggested_qty: number;
   handled_note: string | null;
   headline: string;

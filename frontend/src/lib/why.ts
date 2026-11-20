@@ -58,6 +58,18 @@ export function whyRunOut(row: ItemRowData, asOf: string, from: string): WhyCont
 }
 
 export function whyArrival(row: ItemRowData, asOf: string, from: string): WhyContent {
+  if (row.gap_days > 0 && row.next_eta) {
+    return {
+      sentence: `The order already on the way is due ${shortDate(row.next_eta)}. That is what ends the dip, not a new order.`,
+      inputs: [
+        { label: "Next arrival", value: shortDate(row.next_eta), source: SOURCE.pos },
+        { label: "Runs out", value: row.run_out_date ? shortDate(row.run_out_date) : "—", source: SOURCE.demand },
+      ],
+      formula: "Overdue orders are assumed to land in 7 days (domestic) or 14 (imports), so this date is an estimate.",
+      asOf: shortDate(asOf),
+      href: itemHref(row.code, from),
+    };
+  }
   return {
     sentence: `An order placed today takes ${days(row.lead_days)} to arrive from ${row.vendor_name}, so it would land ${shortDate(arrivalDate(row, asOf))}.`,
     inputs: [
@@ -74,7 +86,9 @@ export function whyArrival(row: ItemRowData, asOf: string, from: string): WhyCon
 export function whyGap(row: ItemRowData, asOf: string, from: string): WhyContent {
   return {
     sentence:
-      row.days_late > 0
+      row.gap_days > 0
+        ? `Stock dips below zero for ${days(row.gap_days)} until the order already on the way lands${row.next_eta ? ` ${shortDate(row.next_eta)}` : ""}. After that it covers the weeks ahead, so no new order is needed.`
+        : row.days_late > 0
         ? `Stock runs out ${days(row.days_late)} before a reorder placed today could arrive.`
         : "A reorder placed today would arrive before stock runs out. The last day to order is close, though.",
     inputs: [
@@ -107,7 +121,9 @@ export function whyOrderQty(row: ItemRowData, asOf: string, from: string): WhyCo
 export function whyAction(row: ItemRowData, asOf: string, from: string): WhyContent {
   const by = row.order_by_date;
   return {
-    sentence: !by
+    sentence: row.gap_days > 0
+      ? "Nothing new to order. The risk is that the order on the way slips again, so check with the vendor."
+      : !by
       ? "No order needed yet."
       : by <= asOf
         ? `The last day to order was ${shortDate(by)}. Order today to get stock back as soon as possible.`

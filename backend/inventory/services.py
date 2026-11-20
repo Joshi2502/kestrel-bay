@@ -278,6 +278,20 @@ def _headline(plan: ItemPlan, as_of: date) -> str:
     if v.run_out_date is None:
         return f"Stock is fine for at least the next {plan.horizon_days // 30} months"
     out = _short(v.run_out_date)
+    if v.gap_days > 0:
+        rescue = min(
+            (i for i in plan.position.incoming if i.eta > v.run_out_date), key=lambda i: i.eta
+        )
+        days = f"{v.gap_days} day" + ("" if v.gap_days == 1 else "s")
+        overdue = (
+            f" (overdue: vendor said {_short(rescue.vendor_said)})"
+            if rescue.overdue and rescue.vendor_said
+            else ""
+        )
+        return (
+            f"Dips below zero around {out} for {days}, until {rescue.ref} lands "
+            f"{_short(rescue.eta)}{overdue}. No new order needed"
+        )
     if v.days_late > 0:
         return (
             f"Out around {out}. An order placed today lands {_short(v.earliest_arrival)}, "
@@ -315,6 +329,7 @@ def _row(plan: ItemPlan, as_of: date) -> dict[str, Any]:
         "order_by_date": _iso(v.order_by_date),
         "earliest_arrival": _iso(v.earliest_arrival),
         "days_late": v.days_late,
+        "gap_days": v.gap_days,
         "suggested_qty": v.suggested_qty,
         "handled_note": plan.handled.note if plan.handled else None,
         "headline": _headline(plan, as_of),

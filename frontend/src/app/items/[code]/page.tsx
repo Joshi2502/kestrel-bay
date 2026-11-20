@@ -31,6 +31,7 @@ function Status({ d }: { d: ItemDetail }) {
   const v = d.verdict;
   if (!v) return <span className="text-sm text-muted">Not planned: no live demand for this item</span>;
   if (v.status === "handled") return <span className="text-sm font-medium">Handled: you told the screen about this</span>;
+  if (v.gap_days > 0) return <Severity kind="watch" label="Brief dip: the order on the way covers it" />;
   if (v.status === "order_now" && v.days_late > 0) return <Severity kind="critical" />;
   if (v.status === "order_now") return <Severity kind="watch" label="Order this week" />;
   if (v.status === "watch") return <Severity kind="watch" label="Tight: order within four weeks" />;
