@@ -1,123 +1,116 @@
-"use client";
-
-import { useCallback, useEffect, useState } from "react";
+import { Suspense } from "react";
+import { AppHeader } from "@/components/AppHeader";
 import { DataNotes } from "@/components/DataNotes";
-import { Header } from "@/components/Header";
-import { ItemRow } from "@/components/ItemRow";
-import { StuckList } from "@/components/StuckList";
-import { apiFetch } from "@/lib/api";
-import { money, weekdayDate } from "@/lib/format";
-import type { Dashboard, ItemRowData } from "@/lib/types";
+import { HeadlineStrip } from "@/components/HeadlineStrip";
+import { RiskTable } from "@/components/RiskTable";
+import { PageSkeleton } from "@/components/Skeleton";
+import { StuckTable } from "@/components/StuckTable";
+import { arrivalDate, daysBetween, groupedInt, money } from "@/lib/format";
+import { getDashboard } from "@/lib/server-api";
+import { type Params, one, pick, sortRisk, sortStuck, withParams } from "@/lib/sort";
 
-function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
+function Section({ id, title, hint, children }: { id: string; title: string; hint: string; children: React.ReactNode }) {
   return (
-    <div className={`rounded-lg px-3 py-2 ${tone}`}>
-      <div className="text-2xl font-semibold leading-tight">{value}</div>
-      <div className="text-xs">{label}</div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {hint && <p className="text-sm text-muted">{hint}</p>}
-      </div>
-      {children}
+    <section id={id} className="scroll-mt-4">
+      <h2 className="text-md font-semibold">{title}</h2>
+      <p className="max-w-2xl text-sm text-muted">{hint}</p>
+      <div className="mt-3 border-t border-border">{children}</div>
     </section>
   );
 }
 
-function Rows({ rows, onChanged }: { rows: ItemRowData[]; onChanged: () => void }) {
-  return (
-    <ul className="space-y-2">
-      {rows.map((row) => (
-        <ItemRow key={row.code} row={row} onChanged={onChanged} />
-      ))}
-    </ul>
+async function Dashboard({ params }: { params: Params }) {
+  const data = await getDashboard();
+  const sort = pick(one(params, "sort"), ["urgency", "item", "order"] as const, "urgency");
+  const dir = pick(one(params, "dir"), ["asc", "desc"] as const, "asc");
+  const ssort = pick(one(params, "ssort"), ["value", "qty", "expiry"] as const, "value");
+  const sdir = pick(one(params, "sdir"), ["asc", "desc"] as const, "desc");
+  const here = withParams(params, {});
+
+  const all = [...data.order_now, ...data.watch];
+  const scaleMax = Math.max(
+    1,
+    ...all.map((r) =>
+      Math.max(daysBetween(data.as_of, arrivalDate(r, data.as_of)), r.run_out_date ? daysBetween(data.as_of, r.run_out_date) : 0),
+    ),
   );
-}
-
-export default function Home() {
-  const [data, setData] = useState<Dashboard | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      setData(await apiFetch<Dashboard>("/dashboard"));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load the dashboard");
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
-  }, [load]);
-
-  if (error) return <p className="p-6 text-danger">{error}</p>;
-  if (!data) return <p className="p-6 text-muted">Loading Monday’s numbers…</p>;
+  const nothingAtRisk = data.order_now.length === 0 && data.watch.length === 0;
 
   return (
     <>
-      <Header title="Kestrel Bay" subtitle={weekdayDate(data.as_of)} />
-      <main className="mx-auto max-w-4xl space-y-6 px-4 py-4">
-        <div className="grid grid-cols-3 gap-2">
-          <Stat label="to order now" value={String(data.order_now.length)} tone="bg-danger-bg text-danger" />
-          <Stat label="to watch" value={String(data.watch.length)} tone="bg-warn-bg text-warn" />
-          <Stat label="stuck at cost" value={money(data.stuck_total_value)} tone="bg-calm-bg text-calm" />
-        </div>
+      <HeadlineStrip data={data} />
 
-        <Section
-          title="Order now"
-          hint="Will run out before a new order could get here, counting what is already on the way."
-        >
-          {data.order_now.length ? (
-            <Rows rows={data.order_now} onChanged={load} />
-          ) : (
-            <p className="text-muted">Nothing is urgent.</p>
+      {nothingAtRisk ? (
+        <section className="border-y border-border py-6">
+          <h2 className="font-serif text-lg">Nothing to order this week.</h2>
+          <p className="mt-1 max-w-xl text-muted">
+            Every item has enough stock, on hand or on the way, to last until a new order could arrive.
+          </p>
+        </section>
+      ) : (
+        <>
+          {data.order_now.length > 0 && (
+            <Section
+              id="order-now"
+              title="Order now"
+              hint="Stock runs out before a reorder placed today could arrive, or the last day to order is this week."
+            >
+              <RiskTable
+                rows={sortRisk(data.order_now, sort, dir)}
+                asOf={data.as_of}
+                sort={sort}
+                dir={dir}
+                params={params}
+                here={here}
+                scaleMax={scaleMax}
+              />
+            </Section>
           )}
-        </Section>
+          {data.watch.length > 0 && (
+            <Section id="watch" title="Watch" hint="Tight but recoverable. Order within the next four weeks.">
+              <RiskTable
+                rows={sortRisk(data.watch, sort, dir)}
+                asOf={data.as_of}
+                sort={sort}
+                dir={dir}
+                params={params}
+                here={here}
+                scaleMax={scaleMax}
+              />
+            </Section>
+          )}
+        </>
+      )}
 
-        {data.watch.length > 0 && (
-          <Section title="Watch" hint="Order within the next four weeks.">
-            <Rows rows={data.watch} onChanged={load} />
-          </Section>
-        )}
+      <p className="text-sm text-muted">
+        Everything else is covered: {groupedInt(data.ok_count)} other items have stock that lasts past the planning window.
+        {data.handled.length > 0 && ` ${data.handled.length} more are marked handled.`}
+      </p>
 
-        {data.handled.length > 0 && (
-          <details className="rounded-lg border border-line bg-surface p-3">
-            <summary className="cursor-pointer font-medium">
-              Handled ({data.handled.length}): you’ve told the screen about these
-            </summary>
-            <div className="mt-3">
-              <Rows rows={data.handled} onChanged={load} />
-            </div>
-          </details>
-        )}
-
-        <p className="text-sm text-muted">
-          {data.ok_count} other items are fine: their stock lasts past the planning window.
-        </p>
-
+      {data.stuck.length > 0 && (
         <Section
+          id="stuck"
           title="Stuck stock"
-          hint="Sellable stock nobody will take soon: under six months of shelf life left, too much on hand, or dead items. Harbor stock costs pallet fees every month."
+          hint={`${money(data.stuck_total_value)} at cost. Shelf life under six months, too much on hand, or not selling. Stock at Harbor Cold Storage costs pallet fees every month.`}
         >
-          <StuckList rows={data.stuck} />
+          <StuckTable rows={sortStuck(data.stuck, ssort, sdir)} asOf={data.as_of} sort={ssort} dir={sdir} params={params} here={here} />
         </Section>
+      )}
 
-        <DataNotes notes={data.data_notes} />
+      <DataNotes notes={data.data_notes} />
+    </>
+  );
+}
+
+export default async function Home({ searchParams }: { searchParams: Promise<Params> }) {
+  const params = await searchParams;
+  return (
+    <>
+      <AppHeader />
+      <main className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6">
+        <Suspense fallback={<PageSkeleton />}>
+          <Dashboard params={params} />
+        </Suspense>
       </main>
     </>
   );
