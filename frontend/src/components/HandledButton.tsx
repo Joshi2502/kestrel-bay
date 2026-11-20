@@ -1,17 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetch, jsonBody } from "@/lib/api";
+import { btn, btnPrimary, field } from "./ui";
 
-export function HandledButton({
-  code,
-  handled,
-  onChanged,
-}: {
-  code: string;
-  handled: boolean;
-  onChanged: () => void;
-}) {
+export function HandledButton({ code, handled }: { code: string; handled: boolean }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [qty, setQty] = useState("");
@@ -25,14 +20,10 @@ export function HandledButton({
     try {
       await apiFetch(`/items/${code}/handled`, {
         method: "POST",
-        ...jsonBody({
-          note,
-          qty: qty ? Number(qty) : null,
-          expected_date: date || null,
-        }),
+        ...jsonBody({ note, qty: qty ? Number(qty) : null, expected_date: date || null }),
       });
       setOpen(false);
-      onChanged();
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save");
     } finally {
@@ -44,7 +35,7 @@ export function HandledButton({
     setBusy(true);
     try {
       await apiFetch(`/items/${code}/handled`, { method: "DELETE" });
-      onChanged();
+      router.refresh();
     } finally {
       setBusy(false);
     }
@@ -52,71 +43,35 @@ export function HandledButton({
 
   if (handled) {
     return (
-      <button
-        onClick={undo}
-        disabled={busy}
-        className="rounded-md border border-line px-3 py-1.5 text-sm text-muted hover:text-foreground"
-      >
+      <button type="button" onClick={undo} disabled={busy} className={btn}>
         Undo “handled”
       </button>
     );
   }
-
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium hover:border-accent"
-      >
-        ✓ I’ve handled this
+      <button type="button" onClick={() => setOpen(true)} className={btn}>
+        I’ve handled this
       </button>
     );
   }
-
-  const field = "w-full rounded-md border border-line bg-background px-2 py-1.5 text-sm";
   return (
-    <div className="w-full space-y-2 rounded-lg border border-line bg-surface p-3">
-      <p className="text-sm text-muted">
-        Tell the screen about an order it can’t see yet (e.g. phoned in, not in BlueTide).
-      </p>
-      <input
-        className={field}
-        placeholder="Note, e.g. phoned Bien Xanh Tuesday"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        maxLength={300}
-      />
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          className={field}
-          type="number"
-          min="0"
-          placeholder="Quantity (optional)"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-        />
-        <input
-          className={field}
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          aria-label="Expected arrival"
-        />
+    <div className="w-full max-w-xl space-y-3 border border-border bg-surface p-4 rounded-md">
+      <p className="text-sm text-muted">Tell the screen about an order it can’t see yet (for example phoned in, not in BlueTide).</p>
+      <input className={field} placeholder="Note, e.g. phoned Bien Xanh Tuesday" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} aria-label="Note" />
+      <div className="grid grid-cols-2 gap-3">
+        <input className={field} type="number" min="0" placeholder="Quantity (optional)" value={qty} onChange={(e) => setQty(e.target.value)} aria-label="Quantity" />
+        <input className={field} type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Expected arrival" />
       </div>
       <p className="text-xs text-muted">
-        Add a quantity and arrival date and it counts as stock on the way. Without them the item
-        is just parked for 14 days.
+        Add a quantity and an arrival date and it counts as stock on the way. Without them the item is just parked for 14 days.
       </p>
-      {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex gap-2">
-        <button
-          onClick={save}
-          disabled={busy}
-          className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-background"
-        >
+      {error && <p className="text-sm text-critical">{error}</p>}
+      <div className="flex gap-3">
+        <button type="button" onClick={save} disabled={busy} className={btnPrimary}>
           Save
         </button>
-        <button onClick={() => setOpen(false)} className="px-3 py-1.5 text-sm text-muted">
+        <button type="button" onClick={() => setOpen(false)} className={btn}>
           Cancel
         </button>
       </div>
