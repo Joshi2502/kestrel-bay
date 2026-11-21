@@ -99,8 +99,10 @@ Where the exports and the kickoff call left something open, this is what I decid
 **Orders on the way**
 - Only `Open` PO lines count. Exact duplicate lines are counted once. Outstanding =
   ordered − received, so a part-received PO still counts its remainder.
-- A PO still open past its expected date hasn't arrived. Its arrival is re-estimated at today + 14
-  days (imports) or + 7 days (domestic), and the screen says what the vendor originally said.
+- A PO still open past its expected date is late. That date is the vendor's original quote and
+  nobody updates it, so no arrival is assumed: the PO is listed as late ("arrival unknown", with
+  what the vendor said) and is **not** counted as stock on the way. An item whose dip only a late
+  PO could close is flagged "Only a late order covers this".
 - "I've handled this" with a quantity and date counts as stock on the way; without them it parks the
   item for 14 days.
 

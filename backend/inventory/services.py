@@ -32,6 +32,7 @@ from .rules.position import (
     Position,
     committed_by_month,
     incoming_from_po,
+    late_from_po,
     summarize_lots,
 )
 from .rules.stuck import LotInfo, StuckRow, stuck_rows
@@ -167,17 +168,18 @@ def _plan_item(item: Item, data: _Data) -> ItemPlan:
     for po in data.pos[item.code]:
         if po.expected_date is None:
             continue
-        incoming = incoming_from_po(
+        args = (
             po.po_no,
             po.qty_ordered,
             po.qty_received,
             po.expected_date,
-            po.vendor_id,
             as_of,
             _converter(po.uom, item),
         )
-        if incoming:
+        if incoming := incoming_from_po(*args):
             position.incoming.append(incoming)
+        elif late := late_from_po(*args):
+            position.late.append(late)
     flag = data.handled.get(item.code)
     if flag and flag.qty and flag.expected_date:
         position.incoming.append(
@@ -186,8 +188,6 @@ def _plan_item(item: Item, data: _Data) -> ItemPlan:
                 flag.note or "Phoned in",
                 flag.qty,
                 max(flag.expected_date, as_of),
-                None,
-                False,
             )
         )
     position.incoming.sort(key=lambda i: i.eta)
@@ -206,6 +206,7 @@ def _plan_item(item: Item, data: _Data) -> ItemPlan:
             safety,
             flag is not None,
             item.planning_uom,
+            late_qty=sum(late.qty for late in position.late),
         )
     return ItemPlan(
         item,
@@ -272,7 +273,21 @@ def _stuck_dict(row: StuckRow) -> dict[str, Any]:
     }
 
 
+def _late_clause(plan: ItemPlan) -> str:
+    late = plan.position.late
+    if not late:
+        return ""
+    refs = ", ".join(f"{p.ref} (vendor said {_short(p.vendor_said)})" for p in late)
+    if plan.verdict and plan.verdict.only_late_po_cover:
+        return f". Only a late order could cover this: {refs} is still open, arrival unknown"
+    return f". Late and not counted: {refs} is still open, arrival unknown"
+
+
 def _headline(plan: ItemPlan, as_of: date) -> str:
+    return _base_headline(plan, as_of) + _late_clause(plan)
+
+
+def _base_headline(plan: ItemPlan, as_of: date) -> str:
     v = plan.verdict
     assert v is not None
     if v.run_out_date is None:
@@ -283,14 +298,9 @@ def _headline(plan: ItemPlan, as_of: date) -> str:
             (i for i in plan.position.incoming if i.eta > v.run_out_date), key=lambda i: i.eta
         )
         days = f"{v.gap_days} day" + ("" if v.gap_days == 1 else "s")
-        overdue = (
-            f" (overdue: vendor said {_short(rescue.vendor_said)})"
-            if rescue.overdue and rescue.vendor_said
-            else ""
-        )
         return (
             f"Dips below zero around {out} for {days}, until {rescue.ref} lands "
-            f"{_short(rescue.eta)}{overdue}. No new order needed"
+            f"{_short(rescue.eta)}. No new order needed"
         )
     if v.days_late > 0:
         return (
@@ -333,6 +343,11 @@ def _row(plan: ItemPlan, as_of: date) -> dict[str, Any]:
         "suggested_qty": v.suggested_qty,
         "handled_note": plan.handled.note if plan.handled else None,
         "headline": _headline(plan, as_of),
+        "late_pos": [
+            {"ref": p.ref, "qty": _num(p.qty, uom), "vendor_said": p.vendor_said.isoformat()}
+            for p in pos.late
+        ],
+        "only_late_po_cover": v.only_late_po_cover,
     }
 
 
@@ -368,8 +383,9 @@ def build_dashboard(as_of: date | None = None) -> dict[str, Any]:
         notes.append(
             {
                 "kind": "overdue_pos",
-                "message": "Open POs past the vendor's expected date: treated as still on the "
-                "water, with a new estimated arrival",
+                "message": "Open POs past the vendor's expected date: the date is the original "
+                "quote and nobody updates it, so they are listed as late with no arrival date "
+                "and are not counted as stock on the way",
                 "count": overdue,
             }
         )
@@ -404,14 +420,14 @@ def _math(plan: ItemPlan, as_of: date) -> list[str]:
                 f"{_qty_text(inc.qty, uom)} you phoned in (not in BlueTide yet), "
                 f"expected {_short(inc.eta)}."
             )
-        elif inc.overdue and inc.vendor_said:
-            lines.append(
-                f"{_qty_text(inc.qty, uom)} on {inc.ref}: the vendor said "
-                f"{_short(inc.vendor_said)} but it is still open, so we assume it lands "
-                f"{_short(inc.eta)}."
-            )
         else:
             lines.append(f"{_qty_text(inc.qty, uom)} on {inc.ref}, due {_short(inc.eta)}.")
+    for late in pos.late:
+        lines.append(
+            f"{_qty_text(late.qty, uom)} on {late.ref} is late: the vendor said "
+            f"{_short(late.vendor_said)} and it is still open. It is probably on the way but "
+            "nobody knows when, so it is not counted in the run-out date."
+        )
     for entry in plan.history:
         if entry.stockout_days:
             lines.append(
@@ -498,10 +514,21 @@ def build_item_detail(code: str, as_of: date | None = None) -> dict[str, Any]:
                 "ref": i.ref,
                 "qty": _num(i.qty, uom),
                 "eta": i.eta.isoformat(),
-                "vendor_said": _iso(i.vendor_said),
-                "overdue": i.overdue,
+                "vendor_said": None,
+                "overdue": False,
             }
             for i in pos.incoming
+        ]
+        + [
+            {
+                "source": "po",
+                "ref": late.ref,
+                "qty": _num(late.qty, uom),
+                "eta": None,
+                "vendor_said": late.vendor_said.isoformat(),
+                "overdue": True,
+            }
+            for late in pos.late
         ],
         "history": [
             {

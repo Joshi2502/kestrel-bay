@@ -49,6 +49,12 @@ export function RiskTile({
       <div className="text-xs text-muted">
         {row.code} · {row.vendor_name}
       </div>
+      {row.late_pos.length > 0 && (
+        <div className="mt-1 text-xs text-muted">
+          {row.only_late_po_cover ? "Only a late order covers this" : "Late order, not counted"}:{" "}
+          {row.late_pos.map((p) => p.ref).join(", ")}. Arrival unknown.
+        </div>
+      )}
 
       <div className="mt-3">
         <GapBar runsInDays={runsIn} landsInDays={daysBetween(asOf, lands)} scaleMax={scaleMax} />

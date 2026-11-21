@@ -25,6 +25,14 @@ export interface ItemRowData {
   suggested_qty: number;
   handled_note: string | null;
   headline: string;
+  late_pos: LatePo[];
+  only_late_po_cover: boolean;
+}
+
+export interface LatePo {
+  ref: string;
+  qty: number;
+  vendor_said: string;
 }
 
 export interface StuckRowData {
@@ -73,7 +81,7 @@ export interface IncomingData {
   source: "po" | "dana";
   ref: string;
   qty: number;
-  eta: string;
+  eta: string | null;
   vendor_said: string | null;
   overdue: boolean;
 }

@@ -120,7 +120,7 @@ async function Item({ code, from }: { code: string; from: string }) {
                   value={q.value}
                   unit={q.unit}
                   lines={[
-                    `Arrives ${shortDate(i.eta)}`,
+                    i.eta ? `Arrives ${shortDate(i.eta)}` : "Late: arrival date unknown",
                     ...(i.overdue && i.vendor_said ? [`Vendor said ${shortDate(i.vendor_said)}, still open`] : []),
                   ]}
                 />

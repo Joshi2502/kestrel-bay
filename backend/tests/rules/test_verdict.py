@@ -11,8 +11,10 @@ def steady(per_day: float, days: int = 400) -> dict[date, float]:
     return {AS_OF + timedelta(days=d): per_day for d in range(days)}
 
 
-def verdict(sellable, cons, lead=84, safety=14, incoming=(), handled=False, uom="CS"):
-    return compute_verdict(sellable, list(incoming), cons, AS_OF, lead, safety, handled, uom)
+def verdict(sellable, cons, lead=84, safety=14, incoming=(), handled=False, uom="CS", late_qty=0.0):
+    return compute_verdict(
+        sellable, list(incoming), cons, AS_OF, lead, safety, handled, uom, late_qty=late_qty
+    )
 
 
 def test_runs_out_before_lead_time_is_order_now_and_late():
@@ -26,7 +28,7 @@ def test_runs_out_before_lead_time_is_order_now_and_late():
 
 def test_dip_closed_by_an_order_on_the_way_is_a_short_gap_not_a_late_reorder():
     # Runs out on day 10, but a big PO lands on day 11 and covers everything after it.
-    po = Incoming("po", "P", 5000, AS_OF + timedelta(11), None, True)
+    po = Incoming("po", "P", 5000, AS_OF + timedelta(11))
     v = verdict(100, steady(10), incoming=[po])
     assert v.run_out_date == AS_OF + timedelta(10)
     assert v.suggested_qty == 0  # nothing new to order
@@ -41,7 +43,7 @@ def test_a_real_late_reorder_has_no_gap_days():
 
 
 def test_incoming_po_delays_runout():
-    po = Incoming("po", "P", 500, AS_OF + timedelta(5), None, False)
+    po = Incoming("po", "P", 500, AS_OF + timedelta(5))
     v = verdict(100, steady(10), lead=14, safety=7, incoming=[po])
     assert v.run_out_date == AS_OF + timedelta(60)
 
@@ -104,3 +106,30 @@ def test_no_suggestion_when_well_stocked():
 def test_projection_series_starts_today():
     v = verdict(100, steady(10), lead=14, safety=7)
     assert v.projection[0] == (AS_OF, 90.0)
+
+
+def test_late_po_quantity_is_never_counted_as_arriving():
+    # Stock runs out on day 10 whether or not a late PO exists: its arrival date is unknown.
+    v = verdict(100, steady(10), lead=14, safety=7, late_qty=5000)
+    assert v.run_out_date == AS_OF + timedelta(10)
+    assert v.status == "order_now"
+    assert v.suggested_qty > 0
+
+
+def test_flags_item_covered_only_by_a_late_po():
+    v = verdict(100, steady(10), lead=14, safety=7, late_qty=100_000)
+    assert v.only_late_po_cover is True
+
+
+def test_late_po_too_small_to_cover_is_not_flagged():
+    v = verdict(100, steady(10), lead=14, safety=7, late_qty=50)
+    assert v.only_late_po_cover is False
+
+
+def test_no_late_po_means_no_late_cover_flag():
+    assert verdict(100, steady(10), lead=14, safety=7).only_late_po_cover is False
+
+
+def test_item_that_never_runs_out_is_not_flagged_even_with_a_late_po():
+    v = verdict(1_000_000, steady(10), lead=14, safety=7, late_qty=500)
+    assert v.only_late_po_cover is False

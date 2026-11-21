@@ -17,16 +17,35 @@ def test_shr1620_is_order_now(loaded):
     assert row["suggested_qty"] > 0
 
 
-def test_shr2125_is_a_one_day_dip_closed_by_the_overdue_po_not_a_late_reorder(loaded):
+def test_shr2125_late_po_is_not_assumed_to_rescue_the_dip(loaded):
     row = next(r for r in build_dashboard(AS_OF)["order_now"] if r["code"] == "SHR-2125")
     assert row["run_out_date"] == "2026-11-29"
-    assert row["next_eta"] == "2026-11-30"
-    assert row["suggested_qty"] == 0
-    assert row["days_late"] == 0
-    assert row["gap_days"] == 1
-    assert "1 day" in row["headline"]
+    assert row["next_eta"] is None  # PO-260394 is late: no arrival date is invented
+    assert row["suggested_qty"] > 0
+    assert row["late_pos"] == [{"ref": "PO-260394", "qty": 800, "vendor_said": "2026-10-05"}]
     assert "PO-260394" in row["headline"]
-    assert "too late" not in row["headline"]
+    assert "arrival unknown" in row["headline"]
+
+
+def test_cal_ring_is_flagged_as_covered_only_by_a_late_po(loaded):
+    row = next(r for r in build_dashboard(AS_OF)["watch"] if r["code"] == "CAL-RING")
+    assert row["only_late_po_cover"] is True
+    assert "Only a late order could cover this" in row["headline"]
+
+
+def test_items_without_late_pos_have_no_late_flag(loaded):
+    row = next(r for r in build_dashboard(AS_OF)["order_now"] if r["code"] == "SHR-1620")
+    assert row["late_pos"] == [] and row["only_late_po_cover"] is False
+
+
+def test_vendor_planning_numbers_match_the_customer_answers(loaded):
+    from inventory.models import Vendor
+
+    got = {v.code: (v.lead_time_days, v.safety_days) for v in Vendor.objects.all()}
+    assert got["BXE"] == (84, 14)  # Vietnam: 10-12 weeks (upper end), ignore the 8 on the sheet
+    assert got["AFS"] == (42, 14)  # Chile: ~6 weeks
+    assert got["MNP"] == (14, 7)  # Canada: ~2 weeks
+    assert got["ASP"][1] == got["DLC"][1] == 7  # domestic: one week
 
 
 def test_every_planned_item_lands_in_exactly_one_group(loaded):
@@ -89,7 +108,7 @@ def test_overdue_po_shown(loaded):
     incoming = build_item_detail("PAN-0709", AS_OF)["incoming"][0]
     assert incoming["overdue"] is True
     assert incoming["qty"] == 400
-    assert incoming["eta"] == "2026-11-30"
+    assert incoming["eta"] is None
     assert incoming["vendor_said"] == "2026-09-14"
 
 

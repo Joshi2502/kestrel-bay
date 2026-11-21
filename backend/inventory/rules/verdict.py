@@ -23,6 +23,7 @@ class Verdict:
     gap_days: int  # days below zero until stock on the way lands; 0 when a new order is needed
     suggested_qty: float
     projection: list[tuple[date, float]]
+    only_late_po_cover: bool = False  # a late PO (arrival unknown) is all that could close the dip
 
 
 def daily_consumption(
@@ -67,6 +68,7 @@ def compute_verdict(
     safety_days: int,
     handled: bool,
     planning_uom: str,
+    late_qty: float = 0.0,
 ) -> Verdict:
     horizon_days = lead_days + safety_days + COVER_WINDOW_DAYS + EXTRA_HORIZON_DAYS
     arrivals: dict[date, float] = {}
@@ -113,6 +115,20 @@ def compute_verdict(
             gap_days = (recovery - run_out).days
             days_late = 0
 
+    # Late POs are not in the projection (no known arrival). Flag when one is big enough that,
+    # if it lands in time, it would close the whole dip, so the buyer can chase it.
+    only_late_cover = bool(
+        run_out and late_qty > 0 and min(qty for _, qty in projection) + late_qty >= 0
+    )
+
     return Verdict(
-        status, run_out, order_by, earliest_arrival, days_late, gap_days, suggested, projection
+        status,
+        run_out,
+        order_by,
+        earliest_arrival,
+        days_late,
+        gap_days,
+        suggested,
+        projection,
+        only_late_cover,
     )

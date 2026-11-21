@@ -3,15 +3,12 @@
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date
 from typing import Literal
 
 from .constants import (
     DAMAGED_LOCATION,
     HOLD_LOCATION,
-    IMPORT_VENDORS,
-    OVERDUE_ETA_DOMESTIC_DAYS,
-    OVERDUE_ETA_IMPORT_DAYS,
     SELLABLE_LOCATIONS,
 )
 
@@ -22,8 +19,16 @@ class Incoming:
     ref: str
     qty: float
     eta: date
-    vendor_said: date | None
-    overdue: bool
+
+
+@dataclass
+class LateIncoming:
+    """An open PO past its expected date. Nobody updates that date, so when (or whether soon)
+    it lands is unknown: it is shown, never counted toward the projection."""
+
+    ref: str
+    qty: float
+    vendor_said: date
 
 
 @dataclass
@@ -34,6 +39,7 @@ class Position:
     by_location: dict[str, float]
     committed_by_month: dict[tuple[int, int], float] = field(default_factory=dict)
     incoming: list[Incoming] = field(default_factory=list)
+    late: list[LateIncoming] = field(default_factory=list)
 
 
 def summarize_lots(lots: Iterable[tuple[str, float]]) -> Position:
@@ -63,27 +69,31 @@ def committed_by_month(lines: Iterable[tuple[date, float]]) -> dict[tuple[int, i
     return dict(totals)
 
 
-def corrected_eta(expected: date, as_of: date, vendor_code: str) -> tuple[date, bool]:
-    """A PO still open past its expected date has not arrived; push its ETA out (spec §3.5)."""
-    if expected >= as_of:
-        return expected, False
-    days = OVERDUE_ETA_IMPORT_DAYS if vendor_code in IMPORT_VENDORS else OVERDUE_ETA_DOMESTIC_DAYS
-    return as_of + timedelta(days=days), True
-
-
 def incoming_from_po(
     po_no: str,
     qty_ordered: float,
     qty_received: float,
     expected: date,
-    vendor_code: str,
     as_of: date,
     to_planning: Callable[[float], float],
 ) -> Incoming | None:
+    """Outstanding qty on a PO that is still within its expected date."""
     outstanding = qty_ordered - qty_received
-    if outstanding <= 0:
+    if outstanding <= 0 or expected < as_of:
         return None
-    eta, overdue = corrected_eta(expected, as_of, vendor_code)
-    return Incoming(
-        "po", po_no, to_planning(outstanding), eta, expected if overdue else None, overdue
-    )
+    return Incoming("po", po_no, to_planning(outstanding), expected)
+
+
+def late_from_po(
+    po_no: str,
+    qty_ordered: float,
+    qty_received: float,
+    expected: date,
+    as_of: date,
+    to_planning: Callable[[float], float],
+) -> LateIncoming | None:
+    """Outstanding qty on a PO still open past its expected date (arrival unknown)."""
+    outstanding = qty_ordered - qty_received
+    if outstanding <= 0 or expected >= as_of:
+        return None
+    return LateIncoming(po_no, to_planning(outstanding), expected)

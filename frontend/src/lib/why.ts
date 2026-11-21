@@ -65,7 +65,7 @@ export function whyArrival(row: ItemRowData, asOf: string, from: string): WhyCon
         { label: "Next arrival", value: shortDate(row.next_eta), source: SOURCE.pos },
         { label: "Runs out", value: row.run_out_date ? shortDate(row.run_out_date) : "—", source: SOURCE.demand },
       ],
-      formula: "Overdue orders are assumed to land in 7 days (domestic) or 14 (imports), so this date is an estimate.",
+      formula: "Only orders still inside their expected date are counted. Late orders have no known arrival, so they are never used here.",
       asOf: shortDate(asOf),
       href: itemHref(row.code, from),
     };
@@ -195,7 +195,9 @@ export function itemWhy(d: ItemDetail, asOf: string) {
   const stamp = shortDate(asOf);
   const v = d.verdict;
   const sellableLots = d.lots.filter((l) => l.status === "sellable");
-  const onWay = d.incoming.reduce((sum, i) => sum + i.qty, 0);
+  const dated = d.incoming.filter((i) => i.eta);
+  const lateOrders = d.incoming.filter((i) => !i.eta);
+  const onWay = dated.reduce((sum, i) => sum + i.qty, 0);
   const daily = v ? v.demand_next_30d / 30 : 0;
   const runsIn = v?.run_out_date ? daysBetween(asOf, v.run_out_date) : null;
   return {
@@ -212,15 +214,19 @@ export function itemWhy(d: ItemDetail, asOf: string) {
       hrefLabel,
     } satisfies WhyContent,
     onWay: {
-      sentence: d.incoming.length
-        ? `${qty(onWay, d.uom)} is due in on ${d.incoming.length} open ${d.incoming.length === 1 ? "order" : "orders"}.`
-        : "Nothing is on order.",
+      sentence:
+        (dated.length
+          ? `${qty(onWay, d.uom)} is due in on ${dated.length} open ${dated.length === 1 ? "order" : "orders"}.`
+          : "Nothing with a known arrival date is on order.") +
+        (lateOrders.length
+          ? ` ${lateOrders.length} more ${lateOrders.length === 1 ? "order is" : "orders are"} late: still open past the vendor's date, arrival unknown, not counted.`
+          : ""),
       inputs: d.incoming.map((i) => ({
         label: i.source === "dana" ? "You phoned in" : i.ref,
         value: qty(i.qty, d.uom),
-        source: `Arriving ${shortDate(i.eta)}`,
+        source: i.eta ? `Arriving ${shortDate(i.eta)}` : `Late: vendor said ${i.vendor_said ? shortDate(i.vendor_said) : "earlier"}, arrival unknown`,
       })),
-      formula: "On the way = open purchase orders, plus anything you told us. Overdue orders are assumed to land in 7 days (domestic) or 14 (imports).",
+      formula: "On the way = open purchase orders, plus anything you told us. Orders still open past the vendor's date are listed as late, with no arrival date, and are not counted.",
       asOf: stamp,
       href,
       hrefLabel,

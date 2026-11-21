@@ -4,47 +4,46 @@ import pytest
 
 from inventory.rules.position import (
     Incoming,
+    LateIncoming,
     committed_by_month,
-    corrected_eta,
     incoming_from_po,
+    late_from_po,
     summarize_lots,
 )
 from tests.conftest import AS_OF
 
 
-def test_overdue_import_po():
-    assert corrected_eta(date(2026, 9, 14), AS_OF, "BXE") == (date(2026, 11, 30), True)
+def test_overdue_po_has_no_assumed_arrival_date():
+    late = late_from_po("PO-260376", 1000, 600, date(2026, 9, 14), AS_OF, lambda q: q)
+    assert late == LateIncoming("PO-260376", 400, date(2026, 9, 14))
 
 
-def test_overdue_domestic_po():
-    assert corrected_eta(date(2026, 11, 1), AS_OF, "MNP") == (date(2026, 11, 23), True)
-
-
-def test_future_po_untouched():
-    assert corrected_eta(date(2026, 12, 28), AS_OF, "BXE") == (date(2026, 12, 28), False)
+def test_overdue_po_is_not_counted_as_dated_incoming():
+    assert incoming_from_po("P", 10, 0, date(2026, 9, 14), AS_OF, lambda q: q) is None
 
 
 def test_po_expected_today_is_not_overdue():
-    assert corrected_eta(AS_OF, AS_OF, "MNP") == (AS_OF, False)
+    assert late_from_po("P", 10, 0, AS_OF, AS_OF, lambda q: q) is None
+    assert incoming_from_po("P", 10, 0, AS_OF, AS_OF, lambda q: q) is not None
 
 
-def test_partial_po_outstanding():
-    inc = incoming_from_po("PO-260376", 1000, 600, date(2026, 9, 14), "BXE", AS_OF, lambda q: q)
+def test_future_po_is_dated_incoming():
+    inc = incoming_from_po("PO-1", 1000, 600, date(2026, 12, 28), AS_OF, lambda q: q)
     assert inc is not None
     assert inc.qty == 400
-    assert inc.overdue
-    assert inc.eta == date(2026, 11, 30)
-    assert inc.vendor_said == date(2026, 9, 14)
+    assert inc.eta == date(2026, 12, 28)
     assert inc.source == "po"
+    assert late_from_po("PO-1", 1000, 600, date(2026, 12, 28), AS_OF, lambda q: q) is None
 
 
 def test_fully_received_po_is_none():
-    assert incoming_from_po("X", 10, 10, date(2026, 12, 1), "MNP", AS_OF, lambda q: q) is None
+    assert incoming_from_po("X", 10, 10, date(2026, 12, 1), AS_OF, lambda q: q) is None
+    assert late_from_po("X", 10, 10, date(2026, 9, 1), AS_OF, lambda q: q) is None
 
 
 def test_po_quantity_goes_through_unit_converter():
-    inc = incoming_from_po("P", 100, 0, date(2026, 12, 1), "MNP", AS_OF, lambda q: q / 10)
-    assert inc == Incoming("po", "P", 10.0, date(2026, 12, 1), None, False)
+    inc = incoming_from_po("P", 100, 0, date(2026, 12, 1), AS_OF, lambda q: q / 10)
+    assert inc == Incoming("po", "P", 10.0, date(2026, 12, 1))
 
 
 def test_summarize_lots_splits_sellable_hold_damaged():
